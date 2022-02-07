@@ -63,14 +63,27 @@ Having said that we decided to build it with the following characteristics:
 A Fully on-chain instant messenger was developed in Polygon, making interactions through our Metamask wallet and integrated to Polygon scan.
 All our chat is based on the use of transactions and interaction with a Smart Contract deployed on the Polygon blockchain (Mumbai testnet), using Moralis for almost everything on the backend, from managing the Polygon RPC to interactions from the frontend and the Metamask Wallet to sign the transactions. Everything is made using the ReactJS framework.
 
-<img src="https://i.ibb.co/DCbLGwm/image.png">
+<img src="https://i.ibb.co/tHr0XQW/diagram-drawio.png">
 
 # Tech we use
 
 ## Polygon
 
+Polygon is used almost for everything, we sign every single message (as they are all on-chain) with Metamask through the mumbai testnet RPC and the MATIC transactions are done, well, through it also.
+
+<img src="https://i.ibb.co/f4XSr8y/image1.png">
+
+Here is the UI and how you can chat, and also send and request MATIC tokens.
+
+You can see the code here: 
 
 ## Moralis
+
+We use Moralis for almost everything on the backend, from managing the Polygon RPC to interactions from the frontend and the Metamask Wallet to sign the transactions. 
+
+<img src="https://i.ibb.co/gwJSt73/Respect-Da-Pump.png">
+
+You can see the code here:
 
 
 # What's next:
