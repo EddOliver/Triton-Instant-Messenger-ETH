@@ -23,7 +23,6 @@ const optionsNetwork = {
   chain: "mumbai"
 }
 const contractAddress = "0xCa185554B896B0B496479BDD9B74A675f0Be7674";
-
 const etherTable = {
   "wei": "1",
   "kwei": "1000",
@@ -96,13 +95,14 @@ function mergeAndSort(a, b) {
   return result;
 }
 
+// Component Class
+
 class Main extends Component {
   constructor(props) {
     super(props);
     this.provider = null;
     this.state = {
       account: null,
-      to: "0xbfe7526Cf1C4D070Fd5386D663BEa6658Acd7135",
       visible: true,
       fetchFlag: false,
       checked: false,
@@ -124,8 +124,8 @@ class Main extends Component {
       tokenList: [],
       tokenSelect: "",
     }
-    autoBind(this);
-    this.Moralis = require('moralis');
+    autoBind(this);                    // Auto bind all methods
+    this.Moralis = require('moralis'); // Moralis Module Import 
     this.provider = null;
     this.chatContract = null;
     this.connectInterval = null;
@@ -134,6 +134,7 @@ class Main extends Component {
   }
 
   async componentDidMount() {
+    // check if URL contains address
     let startFlag = this.props.match.params.address ? true : false;
     if (startFlag) {
       if (this.props.match.params.address === "" || this.props.match.params.address.length !== 42) {
@@ -147,6 +148,7 @@ class Main extends Component {
       console.log("No address found. Please enter a valid address.")
     }
     else {
+      // Get all addresses from cookies
       const { cookies } = this.props;
       let temp = cookies.get('address') || this.state.addresses;
       let flag = false
@@ -173,66 +175,77 @@ class Main extends Component {
           activeIndex: temp.indexOf(this.props.match.params.address)
         })
       }
-
-    }
-    await this.Moralis.start({ serverUrl, appId });
-    let user = this.Moralis.User.current();
-    this.provider = await this.Moralis.enableWeb3();
-    this.chatContract = new ethers.Contract(contractAddress, abi(), this.provider.getSigner());
-    await new Promise(async (resolve, reject) => {
-      if (!user) {
-        user = await this.Moralis.authenticate({ signingMessage: "Log in using Moralis" })
-          .then(async function (user) {
-            const value = await this.Moralis.Web3API.account.getNativeBalance(optionsNetwork).balance
-            console.log(value);
-            this.setState({
-              account: {
-                ethAddress: user.get("ethAddress"),
-                balance: transform(value.balance, "ether"),
-                tokens: await this.Moralis.Web3API.account.getTokenBalances(optionsNetwork),
-              },
-              visible: false
-            }, resolve("ok"));
+      // Start Moralis connection
+      await this.Moralis.start({ serverUrl, appId });
+      // Get User Account
+      let user = this.Moralis.User.current();
+      // Get Moralis Provider
+      this.provider = await this.Moralis.enableWeb3();
+      // Create Object of Chat Contract
+      this.chatContract = new ethers.Contract(contractAddress, abi(), this.provider.getSigner());
+      // Get Account Balance
+      await new Promise(async (resolve, reject) => {
+        if (!user) { // If user is not logged in
+          // Authenticate User with Moralis
+          user = await this.Moralis.authenticate({ signingMessage: "Log in using Moralis" })
+            .then(async function (user) {
+              // Get User Balance
+              const value = await this.Moralis.Web3API.account.getNativeBalance(optionsNetwork).balance
+              console.log(value);
+              this.setState({
+                account: {
+                  ethAddress: user.get("ethAddress"),
+                  balance: transform(value.balance, "ether"),
+                  tokens: await this.Moralis.Web3API.account.getTokenBalances(optionsNetwork), // Get Token Balances
+                },
+                visible: false
+              }, resolve("ok"));
+            })
+            .catch(function (error) {
+              console.log(error);
+              reject(error);
+            });
+        }
+        else { // If user is logged in
+          // Get User Balance
+          const value = await this.Moralis.Web3API.account.getNativeBalance(optionsNetwork)
+          this.setState({
+            account: {
+              ethAddress: user.get("ethAddress"),
+              balance: transform(value.balance, "ether"),
+              tokens: await this.Moralis.Web3API.account.getTokenBalances(optionsNetwork) // Get Token Balances
+            },
+            visible: false
+          }, resolve("ok"));
+        }
+      });
+      // Get Token List
+      let tempTokenList = ["Matic"];
+      this.state.account.tokens.forEach(item => tempTokenList.push(item.name));
+      this.setState({
+        tokenList: tempTokenList
+      })
+      // Get Message History continuously
+      this.fetchInterval = setInterval(() => {
+        if (!this.state.fetchFlag) {
+          this.setState({
+            fetchFlag: true,
+          }, () => {
+            this.getMessagesFromAccount(this.state.account.ethAddress, this.state.activeAddress)
           })
-          .catch(function (error) {
-            console.log(error);
-            reject(error);
-          });
-      }
-      else {
-        const value = await this.Moralis.Web3API.account.getNativeBalance(optionsNetwork)
-        this.setState({
-          account: {
-            ethAddress: user.get("ethAddress"),
-            balance: transform(value.balance, "ether"),
-            tokens: await this.Moralis.Web3API.account.getTokenBalances(optionsNetwork)
-          },
-          visible: false
-        }, resolve("ok"));
-      }
-    });
-    let tempTokenList = ["Matic"];
-    this.state.account.tokens.forEach(item => tempTokenList.push(item.name));
-    this.setState({
-      tokenList: tempTokenList
-    })
-    this.fetchInterval = setInterval(() => {
-      if (!this.state.fetchFlag) {
-        this.setState({
-          fetchFlag: true,
-        }, () => {
-          this.getMessagesFromAccount(this.state.account.ethAddress, this.state.activeAddress)
-        })
-      }
-    }, 5000);
+        }
+      }, 1000); // Setup fetch interval
+    }
   }
 
   componentWillUnmount() {
+    // Clear all intervals when component is unmounted
     clearInterval(this.connectInterval);
     clearInterval(this.fetchInterval);
     clearInterval(this.updateData);
   }
 
+  // Get Message History from Account
   async getMessagesFromAccount(from, to) {
     console.log("Fetching messages from account")
     const tempChangeFlag = this.state.changeFlag
@@ -302,7 +315,8 @@ class Main extends Component {
       sending: true
     }, async () => {
       const options = { value: this.state.req ? "0" : ethers.utils.parseEther(num.toString()) }
-      const transaction = await this.chatContract.addMessage(to, tempMessage, options)
+      // Send Message with moralis ethers library
+      const transaction = await this.chatContract.addMessage(to, tempMessage, options) 
       const result = await transaction.wait();
       console.log(result)
       this.setState({
@@ -317,10 +331,10 @@ class Main extends Component {
   async checkMessages(account, to) {
     let messages = [];
 
-    const messagesCounter = await this.chatContract.chatCounter(account); // Check 
+    const messagesCounter = await this.chatContract.chatCounter(account); // Check how many messages are in the chat
     for (let i = 0; i < messagesCounter; i++) {
       let result = await this.chatContract.chatHistory(account, i)
-      if (result.to.toLowerCase() === to.toLowerCase()) {
+      if (result.to.toLowerCase() === to.toLowerCase()) { // Check messages and filter them by to address
         messages.push(result);
       }
     }
@@ -351,22 +365,46 @@ class Main extends Component {
                         flexDirection: 'column',
                         alignItems: 'center',
                       }}>
-                        <div style={{ fontSize: "3rem", textAlign: "center", color: "white", width: "80vw" }}>
-                          Go to Serum Dex and click on Chat to <br /> start using Mercurium Instant Messenger.
+                        <div style={{ fontSize: "3rem", textAlign: "center", color: "black", width: "80vw" }}>
+                          Type the Polygon (Mumbai) <br /> address to start chatting.
                         </div>
+                        <p />
+                        <Input
+                          id="addressValueInit0128"
+                          placeholder="Address"
+                          style={{
+                            width: '70%',
+                            border: "solid 1px #8247e5",
+                            background: "white",
+                            color: "black",
+                            fontSize: "1.5rem",
+                            textAlign: "center",
+                          }}
+                        />
                         <p />
                         <button
                           style={{
                             fontSize: "2vw",
+                            width: "70%",
                           }}
                           className='myButton' onClick={() => {
-                            window.open("https://main.d3lic6l5z1fp8z.amplifyapp.com/", "_self")
+                            if (document.getElementById("addressValueInit0128").value.length === 42) {
+                              window.open(`/${document.getElementById("addressValueInit0128").value}`, "_self")
+                            }
+                            else {
+                              alert("Invalid Address")
+                              document.getElementById("addressValueInit0128").value = ""
+                            }
                           }} >
-                          Open Serum Dex
+                          Start Chat
                         </button>
                       </div>
                       :
-                      <Spinner>
+                      <Spinner style={{
+                        width: "100px",
+                        height: "100px",
+                        color: "#8247e5",
+                      }}>
                         Loading...
                       </Spinner>
                   }
@@ -550,7 +588,7 @@ class Main extends Component {
                                                       bottom: "5px",
                                                       left: "10px",
                                                       width: "100%",
-                                                      color:"black"
+                                                      color: "black"
                                                     }}>
                                                       {message.req} MATIC {"Requested"} &nbsp;&nbsp;&nbsp;
                                                       <button
@@ -688,7 +726,8 @@ class Main extends Component {
                                         <Spinner style={{
                                           width: "100px",
                                           height: "100px",
-                                        }} color="info">
+                                          color: "#8247e5",
+                                        }}>
                                           Loading...
                                         </Spinner>
                                     }
@@ -705,7 +744,7 @@ class Main extends Component {
                               placeholder="Message"
                               style={{
                                 width: '70%',
-                                border:"solid 1px #8247e5",
+                                border: "solid 1px #8247e5",
                                 background: "white",
                                 color: "black",
                               }}
@@ -763,7 +802,7 @@ class Main extends Component {
                                     width: '60%',
                                     background: "white",
                                     color: "black",
-                                    border:"solid 1px #8247e5",
+                                    border: "solid 1px #8247e5",
                                   }}
                                   onChange={(e) => {
                                     this.setState({
