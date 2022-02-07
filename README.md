@@ -75,7 +75,7 @@ Polygon is used almost for everything, we sign every single message (as they are
 
 Here is the UI and how you can chat, and also send and request MATIC tokens.
 
-You can see the code here: 
+You can see the code here: https://github.com/EddOliver/Triton-Instant-Messenger-ETH/blob/main/Contract/Chat.sol
 
 ## Moralis
 
@@ -83,7 +83,7 @@ We use Moralis for almost everything on the backend, from managing the Polygon R
 
 <img src="https://i.ibb.co/gwJSt73/Respect-Da-Pump.png">
 
-You can see the code here:
+You can see the code here: https://github.com/EddOliver/Triton-Instant-Messenger-ETH/blob/main/WebPage/src/pages/main.js
 
 
 # What's next:
